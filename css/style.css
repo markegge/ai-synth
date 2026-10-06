@@ -33,7 +33,13 @@ body {
   font-family: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none; user-select: none;
+  touch-action: manipulation;
 }
+html { overscroll-behavior: none; }
+.help, .help * { -webkit-user-select: text; user-select: text; }
+.tablet main { max-width: none; }
 main { max-width: 1180px; margin: 0 auto; padding: 18px 16px 40px; }
 .top { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin: 4px 4px 14px; }
 .top h1 { font-size: 22px; font-weight: 600; letter-spacing: 0.04em; margin: 0; }
@@ -211,3 +217,18 @@ kbd { font-family: inherit; font-size: 12px; background: #3a3029; border: 1px so
 @media (max-width: 760px) and (orientation: landscape) {
   .bigkeys { display: none; }
 }
+
+/* tablets (feature-detected via JS: coarse pointer, short side >= 600px) */
+.tablet #device { touch-action: none; }
+.tablet .pad, .tablet .knob, .tablet .key { -webkit-touch-callout: none; }
+.tablet .pad { position: relative; }
+.tablet .pad::after { content: ''; position: absolute; inset: -4px; }
+.tablet .pill { padding: 12px 18px; min-height: 44px; font-size: 14px; }
+.tablet .bigplay { width: 52px; height: 52px; }
+.tablet .chip { min-height: 44px; padding: 8px 16px; }
+.tablet .help summary { padding: 8px 0; }
+.tablet.portrait .bigkeys { display: block; height: 220px; }
+.tablet.portrait .bigkeys .key { height: 96px; }
+.tablet.portrait .bigkeys .key.white { top: 112px; }
+.tablet.portrait .bigkeys .key.black { top: 10px; height: 96px; }
+.tablet.portrait .bigkeys .key span { font-size: 12px; }

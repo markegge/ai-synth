@@ -606,9 +606,10 @@ const knobAcc = {};
 $$('.knob').forEach((el) => {
   const name = el.dataset.knob;
   knobAcc[name] = { v: 0 };
-  let lastY = null;
+  let lastY = null, throwPx = 220;
   el.addEventListener('pointerdown', (e) => {
     e.preventDefault();
+    throwPx = e.pointerType === 'touch' ? 160 : 220;
     el.setPointerCapture(e.pointerId);
     lastY = e.clientY;
     el.focus({ preventScroll: true });
@@ -619,7 +620,7 @@ $$('.knob').forEach((el) => {
     const dy = (lastY - e.clientY) / s;
     lastY = e.clientY;
     const p = knobParam(name);
-    if (p) nudge(p, dy / 220, knobAcc[name]);
+    if (p) nudge(p, dy / throwPx, knobAcc[name]);
     markDirty();
   });
   const end = () => { lastY = null; knobAcc[name].v = 0; };
@@ -1056,14 +1057,31 @@ function frame() {
 }
 
 // ---------------------------------------------------------------- scaling
+// Touch tablets are detected by feature (iPadOS Safari reports a Mac UA), not UA sniffing.
+const coarseMQ = window.matchMedia ? window.matchMedia('(pointer: coarse)') : null;
+function isTouchDevice() { return !!(coarseMQ && coarseMQ.matches) || (navigator.maxTouchPoints || 0) > 1; }
 function fit() {
-  const avail = Math.min(document.documentElement.clientWidth - 32, 1180 - 32);
-  const s = Math.min(1, avail / 1095);
-  document.documentElement.style.setProperty('--s', s.toFixed(4));
+  const de = document.documentElement;
+  const touch = isTouchDevice();
+  const w = de.clientWidth, h = window.innerHeight;
+  const tablet = touch && Math.min(w, h) >= 600;
+  de.classList.toggle('tablet', tablet);
+  de.classList.toggle('portrait', h > w);
+  let s;
+  if (tablet) {
+    // Fill the width; in landscape also keep the whole instrument on screen.
+    s = (w - 32) / 1095;
+    if (w > h) s = Math.min(s, (h - 170) / 655);
+    s = Math.max(0.5, Math.min(1.8, s));
+  } else {
+    s = Math.min(1, Math.min(w - 32, 1180 - 32) / 1095);
+  }
+  de.style.setProperty('--s', s.toFixed(4));
   resizeLCD();
 }
 window.addEventListener('resize', fit);
-window.addEventListener('orientationchange', () => setTimeout(fit, 200));
+window.addEventListener('orientationchange', () => { setTimeout(fit, 100); setTimeout(fit, 400); });
+if (coarseMQ && coarseMQ.addEventListener) coarseMQ.addEventListener('change', fit);
 fit();
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(markDirty);
 updateTransportUI();
