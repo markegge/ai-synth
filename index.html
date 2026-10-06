@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ai-synth</title>
+<meta name="description" content="A browser-based 6-operator FM synthesizer with arpeggiator, step sequencer and two playable songs.">
+<meta name="theme-color" content="#1b1714">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='4' y='12' width='56' height='40' rx='10' fill='%23ece6da'/%3E%3Crect x='10' y='34' width='44' height='12' rx='4' fill='%232b2f36'/%3E%3Ccircle cx='18' cy='23' r='5' fill='%23222'/%3E%3Crect x='28' y='17' width='14' height='12' rx='2' fill='%23b7c5d6'/%3E%3Ccircle cx='50' cy='22' r='3' fill='%23e33'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<main>
+  <header class="top">
+    <h1>ai-synth</h1>
+    <p>6-operator FM synthesizer. Tap any key to power on.</p>
+  </header>
+
+  <div id="stage">
+    <div id="device" aria-label="ai-synth instrument">
+      <div class="usb" aria-hidden="true"></div>
+
+      <!-- Left control cluster -->
+      <div class="ctl" style="left:85px;top:110px"><span class="klabel">MASTER</span><div class="knob" data-knob="master" tabindex="0" role="slider" aria-label="Master volume"><i></i></div></div>
+      <div class="ctl" style="left:205px;top:110px"><span class="klabel"><b class="led" id="led"></b>SELECT</span><div class="knob" data-knob="select" tabindex="0" role="slider" aria-label="Select operator"><i></i></div></div>
+      <div class="ctl" style="left:85px;top:225px"><span class="klabel">PRESETS</span><div class="knob" data-knob="presets" tabindex="0" role="slider" aria-label="Presets"><i></i></div></div>
+      <div class="ctl" style="left:205px;top:225px"><span class="klabel">ALGORITHM</span><div class="knob" data-knob="algorithm" tabindex="0" role="slider" aria-label="Algorithm"><i></i></div></div>
+
+      <div class="oct">
+        <button class="pad" data-btn="octdown" aria-label="Octave down">OCT-</button>
+        <button class="pad" data-btn="octup" aria-label="Octave up">OCT+</button>
+      </div>
+
+      <div class="bezel"><canvas id="lcd" width="390" height="420" aria-label="Display"></canvas></div>
+
+      <!-- Page knobs -->
+      <div class="ctl small" style="left:620px;top:102px"><span class="klabel">KNOB1</span><div class="knob knurl" data-knob="k1" tabindex="0" role="slider" aria-label="Knob 1"><i></i></div></div>
+      <div class="ctl small" style="left:738px;top:102px"><span class="klabel">KNOB2</span><div class="knob knurl" data-knob="k2" tabindex="0" role="slider" aria-label="Knob 2"><i></i></div></div>
+      <div class="ctl small" style="left:858px;top:102px"><span class="klabel">KNOB3</span><div class="knob knurl" data-knob="k3" tabindex="0" role="slider" aria-label="Knob 3"><i></i></div></div>
+      <div class="ctl small" style="left:980px;top:102px"><span class="klabel">KNOB4</span><div class="knob knurl" data-knob="k4" tabindex="0" role="slider" aria-label="Knob 4"><i></i></div></div>
+
+      <div class="grid">
+        <button class="pad" data-btn="fx">FX</button>
+        <button class="pad" data-btn="sel">SEL</button>
+        <button class="pad" data-btn="env">ENV</button>
+        <button class="pad" data-btn="lfo">LFO</button>
+        <button class="pad" data-btn="edit">EDIT</button>
+        <button class="pad" data-btn="glo">GLO</button>
+        <button class="pad" data-btn="home">HOME</button>
+        <button class="pad" data-btn="save">SAVE</button>
+        <button class="pad" data-btn="arp">ARP</button>
+        <button class="pad" data-btn="seq">SEQ</button>
+        <button class="pad play" data-btn="play"><span class="g">PLAY</span><span class="o">STOP</span></button>
+        <button class="pad rec" data-btn="rec">REC</button>
+      </div>
+
+      <div class="keybed" id="keybed"></div>
+    </div>
+  </div>
+
+  <div id="bigkeys" class="bigkeys" aria-label="Large keyboard"></div>
+
+  <section class="deck">
+    <div class="songs" role="radiogroup" aria-label="Song">
+      <span class="dlabel">SONG</span>
+      <div id="songpills"></div>
+      <button id="bigplay" class="bigplay" aria-label="Play or stop">&#9654;</button>
+    </div>
+    <div class="status"><span id="nowplaying">Stopped</span><button id="midibtn" class="chip">MIDI</button></div>
+    <details class="help">
+      <summary>How to play</summary>
+      <div class="helpgrid">
+        <div>
+          <h3>Computer keyboard</h3>
+          <div class="kmap" id="kmap"></div>
+          <ul>
+            <li><kbd>Z</kbd> / <kbd>X</kbd> octave down / up</li>
+            <li><kbd>Space</kbd> play / stop</li>
+            <li><kbd>&larr;</kbd> / <kbd>&rarr;</kbd> previous / next preset</li>
+            <li><kbd>&uarr;</kbd> / <kbd>&darr;</kbd> turn the focused knob</li>
+            <li>Hold <kbd>Shift</kbd> (or the SEL button) and press an upper-row key for its printed function: OP1-OP6 select an operator, MT mutes it, GLO toggles glide, MONO / POLY set voice mode.</li>
+          </ul>
+        </div>
+        <div>
+          <h3>Panel</h3>
+          <ul>
+            <li><b>Knobs</b>: drag up/down, scroll, or focus and use arrow keys. Double-click resets KNOB1-4.</li>
+            <li><b>PRESETS</b> picks a patch, <b>ALGORITHM</b> picks one of 14 operator routings, <b>SELECT</b> picks the operator to edit, <b>MASTER</b> is volume.</li>
+            <li><b>EDIT</b> (ratio, detune, level, feedback), <b>ENV</b> (attack, decay, sustain, release), <b>LFO</b>, <b>FX</b> and <b>GLO</b> pages map their parameters to KNOB1-4.</li>
+            <li><b>ARP</b> toggles the arpeggiator. <b>SEQ</b> shows the 16-step pattern; <b>REC</b> step-records notes from the keys (tap SEL for a rest).</li>
+            <li><b>PLAY/STOP</b> plays the selected song, or the step pattern when PATTERN is selected.</li>
+            <li><b>SAVE</b> stores the edited patch in this browser.</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+    <p class="note">An independent web homage to a small hardware FM synth. Original artwork, sounds and code; not affiliated with any manufacturer. <a href="https://github.com/markegge/ai-synth">Source on GitHub</a>.</p>
+  </section>
+</main>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
